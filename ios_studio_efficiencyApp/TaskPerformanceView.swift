@@ -26,7 +26,17 @@ struct TaskPerformanceView: View {
                         Text("Task Performance")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.black)
+                        
                         Spacer()
+                        
+                        NavigationLink(destination: WeeklySummaryView()) {
+                            Image(systemName: "list.bullet")
+                                .foregroundColor(.black)
+                                .padding(12)
+                                .background(Color.white)
+                                .clipShape(Circle())
+                                .shadow(color: .black.opacity(0.1), radius: 5)
+                        }
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 20)
@@ -82,44 +92,41 @@ struct TaskPerformanceView: View {
                         
                         Spacer()
                         
-                        NavigationLink(destination: WeeklySummaryView()) {
-                            ZStack {
-                                Circle()
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 15)
+                        ZStack {
+                            Circle()
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 15)
+                            
+                            Circle()
+                                .trim(from: 0, to: 1.0)
+                                .stroke(
+                                    LinearGradient(colors: [.primaryBlue, .playPauseGreen, .yellow], startPoint: .leading, endPoint: .trailing),
+                                    style: StrokeStyle(lineWidth: 15, lineCap: .round)
+                                )
+                                .rotationEffect(.degrees(-90))
+                            
+                            VStack {
+                                Text("Daily Tasks\nCompleted:")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.gray)
+                                    .multilineTextAlignment(.center)
                                 
-                                Circle()
-                                    .trim(from: 0, to: 1.0)
-                                    .stroke(
-                                        LinearGradient(colors: [.primaryBlue, .playPauseGreen, .yellow], startPoint: .leading, endPoint: .trailing),
-                                        style: StrokeStyle(lineWidth: 15, lineCap: .round)
-                                    )
-                                    .rotationEffect(.degrees(-90))
+                                Text("100%")
+                                    .font(.system(size: 36, weight: .bold))
+                                    .foregroundColor(.black)
                                 
-                                VStack {
-                                    Text("Daily Tasks\nCompleted:")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.gray)
-                                        .multilineTextAlignment(.center)
-                                    
-                                    Text("100%")
-                                        .font(.system(size: 36, weight: .bold))
-                                        .foregroundColor(.black)
-                                    
-                                    Text("Well Done !")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.purple) // Assuming a purple tone for "Well Done" based on design
-                                }
-                                
-                                // Large Badge overlapping bottom
-                                Image(systemName: "medal.fill")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.yellow)
-                                    .shadow(color: .yellow.opacity(0.5), radius: 10)
-                                    .offset(y: 80)
+                                Text("Well Done !")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.purple) // Assuming a purple tone for "Well Done" based on design
                             }
-                            .frame(width: 160, height: 160)
+                            
+                            // Large Badge overlapping bottom
+                            Image(systemName: "medal.fill")
+                                .font(.system(size: 40))
+                                .foregroundColor(.yellow)
+                                .shadow(color: .yellow.opacity(0.5), radius: 10)
+                                .offset(y: 80)
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .frame(width: 160, height: 160)
                         
                         Spacer()
                         
@@ -127,20 +134,6 @@ struct TaskPerformanceView: View {
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.gray)
                                 .font(.system(size: 20, weight: .semibold))
-                        }
-                        
-                        // Menu Button
-                        VStack {
-                            Spacer()
-                            Button(action: {}) {
-                                Image(systemName: "list.bullet")
-                                    .foregroundColor(.black)
-                                    .padding(12)
-                                    .background(Color.white)
-                                    .clipShape(Circle())
-                                    .shadow(color: .black.opacity(0.1), radius: 5)
-                            }
-                            .offset(y: -40)
                         }
                     }
                     .padding(.horizontal, 24)
