@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PointsShopView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     
     let shopItems: [ShopItem] = [
         ShopItem(title: "AI Consult X 1", iconName: "desktopcomputer", points: 500, quantity: "x 99"),
@@ -30,7 +30,7 @@ struct PointsShopView: View {
                 // Nav Bar
                 HStack {
                     Button(action: {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     }) {
                         Image(systemName: "chevron.left")
                             .foregroundColor(.black)

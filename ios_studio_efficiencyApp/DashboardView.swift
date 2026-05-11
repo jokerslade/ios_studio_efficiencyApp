@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct DashboardView: View {
     @State private var tasks: [TaskModel] = [
@@ -112,8 +113,8 @@ struct DashboardView: View {
 struct InProgressCard: View {
     @Binding var task: TaskModel
     @State private var isPlaying = false
-    @State private var timeRemaining: Int = 29
-    @State private var totalTime: Int = 60
+    @State private var timeRemainingSeconds: Int = 29 * 60
+    @State private var totalTimeSeconds: Int = 29 * 60
     
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
@@ -130,12 +131,12 @@ struct InProgressCard: View {
                     InProgressCardContent(task: task, textColor: .white, subtextColor: .white.opacity(0.8))
                         .background(
                             LinearGradient(colors: [.inProgressStart, .inProgressEnd], startPoint: .leading, endPoint: .trailing)
-                                .hueRotation(.degrees(Double(max(0, totalTime - timeRemaining)) * 1.5))
+                                .hueRotation(.degrees(Double(max(0, totalTimeSeconds - timeRemainingSeconds)) * 0.025))
                         )
                         .mask(
                             GeometryReader { geo in
                                 Rectangle()
-                                    .frame(width: max(0, geo.size.width * CGFloat(timeRemaining) / CGFloat(max(1, totalTime))))
+                                    .frame(width: max(0, geo.size.width * CGFloat(timeRemainingSeconds) / CGFloat(max(1, totalTimeSeconds))))
                             }
                         )
                 }
@@ -164,21 +165,19 @@ struct InProgressCard: View {
                 }
             }
             .onReceive(timer) { _ in
-                if isPlaying && timeRemaining > 0 {
-                    timeRemaining -= 1
-                    task.durationString = String(format: "%d:%02d", timeRemaining / 60, timeRemaining % 60)
-                } else if timeRemaining == 0 {
+                if isPlaying && timeRemainingSeconds > 0 {
+                    timeRemainingSeconds -= 1
+                    task.durationString = formatDuration(timeRemainingSeconds)
+                } else if timeRemainingSeconds == 0 {
                     isPlaying = false
                 }
             }
             .onAppear {
-                let parts = task.durationString.split(separator: ":")
-                if parts.count == 2, let m = Int(parts[0]), let s = Int(parts[1]) {
-                    let total = m * 60 + s
-                    if total > 0 {
-                        timeRemaining = total
-                        totalTime = total > 60 ? total : 60
-                    }
+                let total = seconds(from: task.durationString)
+                if total > 0 {
+                    timeRemainingSeconds = total
+                    totalTimeSeconds = total
+                    task.durationString = formatDuration(total)
                 }
             }
             
@@ -225,6 +224,25 @@ struct InProgressCard: View {
                 .zIndex(0)
             }
         }
+    }
+    
+    private func seconds(from duration: String) -> Int {
+        let parts = duration.split(separator: ":")
+        if parts.count == 2, let hours = Int(parts[0]), let minutes = Int(parts[1]) {
+            return ((hours * 60) + minutes) * 60
+        }
+        
+        let digits = duration.filter(\.isNumber)
+        if let minutes = Int(digits) {
+            return minutes * 60
+        }
+        
+        return 0
+    }
+    
+    private func formatDuration(_ seconds: Int) -> String {
+        let minutesRemaining = Int(ceil(Double(seconds) / 60.0))
+        return String(format: "%d:%02d", minutesRemaining / 60, minutesRemaining % 60)
     }
 }
 

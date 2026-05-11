@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct WeeklySummaryView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     
     let categories: [TaskCategoryProgress] = [
         TaskCategoryProgress(title: "Essay", iconName: "pencil", timeSpent: "17 h 43 min", totalTime: "14h", completedTasks: 6, totalTasks: 6, gradientStart: .blue, gradientEnd: .cyan),
@@ -22,7 +22,7 @@ struct WeeklySummaryView: View {
                 // Nav Bar
                 HStack {
                     Button(action: {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     }) {
                         Image(systemName: "chevron.left")
                             .foregroundColor(.black)
@@ -77,7 +77,7 @@ struct WeeklySummaryView: View {
                             .rotationEffect(.degrees(-90))
                         
                         VStack {
-                            Text("Eassay") // Following the typo in design or correct it to Essay
+                            Text("Essay")
                                 .font(.system(size: 16, weight: .semibold))
                             Text("20%")
                                 .font(.system(size: 24, weight: .bold))
@@ -174,11 +174,13 @@ struct CategoryProgressRow: View {
                 }
                 
                 HStack {
-                    Text("\(category.timeSpent) / ")
-                        .font(.system(size: 12, weight: .bold))
-                    + Text(category.totalTime)
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
+                    HStack(spacing: 0) {
+                        Text("\(category.timeSpent) / ")
+                            .font(.system(size: 12, weight: .bold))
+                        Text(category.totalTime)
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                    }
                     
                     Spacer()
                     
