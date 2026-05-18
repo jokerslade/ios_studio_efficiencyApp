@@ -35,6 +35,8 @@ struct DashboardView: View {
     ]
     
     @State private var showingCreateTask = false
+    @State private var showingCongratsPopup = false
+    @State private var recentlyEarnedPoints = 0
     
     var body: some View {
         NavigationStack {
@@ -66,7 +68,66 @@ struct DashboardView: View {
                             // In Progress Section
                             ForEach($tasks) { $task in
                                 if task.state == .inProgress {
-                                    InProgressCard(task: $task)
+                                    SwipeableCard(
+                                        onFinish: {
+                                            withAnimation(.spring()) {
+                                                task.state = .completed
+                                                task.progress = 1.0
+                                                for i in 0..<task.subtasks.count {
+                                                    task.subtasks[i].isCompleted = true
+                                                }
+                                            }
+                                            recentlyEarnedPoints = task.points
+                                            withAnimation { showingCongratsPopup = true }
+                                        },
+                                        onDelete: {
+                                            withAnimation(.spring()) {
+                                                if let index = tasks.firstIndex(where: { $0.id == task.id }) {
+                                                    tasks.remove(at: index)
+                                                }
+                                            }
+                                        }
+                                    ) {
+                                        InProgressCard(task: $task) {
+                                            withAnimation(.spring()) {
+                                                task.state = .completed
+                                                task.progress = 1.0
+                                                for i in 0..<task.subtasks.count {
+                                                    task.subtasks[i].isCompleted = true
+                                                }
+                                            }
+                                            recentlyEarnedPoints = task.points
+                                            withAnimation { showingCongratsPopup = true }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Pending Tasks Section
+                            ForEach($tasks) { $task in
+                                if task.state == .pending {
+                                    SwipeableCard(
+                                        onFinish: {
+                                            withAnimation(.spring()) {
+                                                task.state = .completed
+                                                task.progress = 1.0
+                                                for i in 0..<task.subtasks.count {
+                                                    task.subtasks[i].isCompleted = true
+                                                }
+                                            }
+                                            recentlyEarnedPoints = task.points
+                                            withAnimation { showingCongratsPopup = true }
+                                        },
+                                        onDelete: {
+                                            withAnimation(.spring()) {
+                                                if let index = tasks.firstIndex(where: { $0.id == task.id }) {
+                                                    tasks.remove(at: index)
+                                                }
+                                            }
+                                        }
+                                    ) {
+                                        PendingTaskCard(task: $task)
+                                    }
                                 }
                             }
                             
@@ -95,12 +156,47 @@ struct DashboardView: View {
                             
                             ForEach($tasks) { $task in
                                 if task.state == .completed {
-                                    CompletedTaskCard(task: $task)
+                                    SwipeableCard(
+                                        primaryIcon: "arrow.counterclockwise",
+                                        onFinish: {
+                                            withAnimation(.spring()) {
+                                                task.state = .pending
+                                                task.progress = 0.0
+                                                for i in 0..<task.subtasks.count {
+                                                    task.subtasks[i].isCompleted = false
+                                                }
+                                            }
+                                        },
+                                        onDelete: {
+                                            withAnimation(.spring()) {
+                                                if let index = tasks.firstIndex(where: { $0.id == task.id }) {
+                                                    tasks.remove(at: index)
+                                                }
+                                            }
+                                        }
+                                    ) {
+                                        CompletedTaskCard(task: $task)
+                                    }
                                 }
                             }
                         }
                         .padding(.bottom, 20)
                     }
+                }
+                
+                // Popup Overlay
+                if showingCongratsPopup {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation { showingCongratsPopup = false }
+                        }
+                    
+                    CongratsPopupView(points: recentlyEarnedPoints) {
+                        withAnimation { showingCongratsPopup = false }
+                    }
+                    .transition(.scale.combined(with: .opacity))
+                    .zIndex(2)
                 }
             }
             .navigationDestination(isPresented: $showingCreateTask) {
@@ -112,6 +208,7 @@ struct DashboardView: View {
 
 struct InProgressCard: View {
     @Binding var task: TaskModel
+    var onComplete: (() -> Void)? = nil
     @State private var isPlaying = false
     @State private var timeRemainingSeconds: Int = 29 * 60
     @State private var totalTimeSeconds: Int = 29 * 60
@@ -168,6 +265,10 @@ struct InProgressCard: View {
                 if isPlaying && timeRemainingSeconds > 0 {
                     timeRemainingSeconds -= 1
                     task.durationString = formatDuration(timeRemainingSeconds)
+                    if timeRemainingSeconds == 0 {
+                        isPlaying = false
+                        onComplete?()
+                    }
                 } else if timeRemainingSeconds == 0 {
                     isPlaying = false
                 }
@@ -402,5 +503,236 @@ struct InProgressCardContent: View {
             Spacer().frame(width: 50) // Space for the Play/Pause button
         }
         .padding(20)
+    }
+}
+
+struct PendingTaskCard: View {
+    @Binding var task: TaskModel
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Badges
+            HStack(spacing: 8) {
+                Text("23 March 2026")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.primaryBlue)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.primaryBlue.opacity(0.1))
+                    .cornerRadius(4)
+                
+                Text("\(task.points) Pt")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.primaryBlue)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.primaryBlue.opacity(0.1))
+                    .cornerRadius(4)
+                
+                Spacer()
+            }
+            
+            // Middle section
+            HStack {
+                Text(task.title)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.textPrimary)
+                
+                Spacer()
+                
+                Text(task.durationString)
+                    .font(.system(size: 24, weight: .light))
+                    .foregroundColor(.textPrimary)
+                
+                Button(action: {
+                    withAnimation(.spring()) {
+                        task.state = .inProgress
+                    }
+                }) {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.black.opacity(0.7))
+                        .frame(width: 50, height: 50)
+                        .background(Color.gray.opacity(0.15))
+                        .clipShape(Circle())
+                }
+                .padding(.leading, 8)
+            }
+            
+            // Bottom section
+            HStack(spacing: 16) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color.brown)
+                        .frame(width: 8, height: 8)
+                    Text(task.subtitle.uppercased())
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.textSecondary)
+                }
+                
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color.primaryBlue)
+                        .frame(width: 8, height: 8)
+                    Text("SUB-TASK:\(task.subtasks.count)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.textSecondary)
+                }
+                Spacer()
+            }
+        }
+        .padding(20)
+        .background(Color.white)
+        .cornerRadius(24)
+        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
+        .padding(.horizontal)
+    }
+}
+
+struct SwipeableCard<Content: View>: View {
+    var primaryIcon: String = "checkmark.circle"
+    var onFinish: () -> Void
+    var onDelete: () -> Void
+    @ViewBuilder var content: Content
+    
+    @State private var offset: CGFloat = 0
+    @State private var isSwiped: Bool = false
+    
+    let buttonWidth: CGFloat = 50
+    let spacing: CGFloat = 12
+    
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            // Action Buttons
+            HStack(spacing: spacing) {
+                Button(action: {
+                    withAnimation(.spring()) { offset = 0; isSwiped = false }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        onFinish()
+                    }
+                }) {
+                    Image(systemName: primaryIcon)
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(width: buttonWidth, height: buttonWidth)
+                        .background(Color.primaryBlue)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                }
+                
+                Button(action: {
+                    withAnimation(.spring()) { offset = 0; isSwiped = false }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        onDelete()
+                    }
+                }) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                        .frame(width: buttonWidth, height: buttonWidth)
+                        .background(Color(red: 1.0, green: 0.4, blue: 0.4))
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                }
+            }
+            .padding(.trailing, 20)
+            .opacity(offset < 0 ? 1 : 0)
+            
+            // Content Card
+            content
+                .offset(x: offset)
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            let maxOffset = -((buttonWidth * 2) + spacing + 10)
+                            if value.translation.width < 0 {
+                                // Swiping left
+                                if isSwiped {
+                                    offset = maxOffset + value.translation.width * 0.2
+                                } else {
+                                    offset = value.translation.width
+                                }
+                            } else {
+                                // Swiping right
+                                if isSwiped {
+                                    offset = maxOffset + value.translation.width
+                                    if offset > 0 { offset = 0 }
+                                } else {
+                                    offset = value.translation.width * 0.2
+                                }
+                            }
+                        }
+                        .onEnded { value in
+                            let maxOffset = -((buttonWidth * 2) + spacing + 10)
+                            withAnimation(.spring()) {
+                                if value.translation.width < -50 {
+                                    offset = maxOffset
+                                    isSwiped = true
+                                } else if isSwiped && value.translation.width > 30 {
+                                    offset = 0
+                                    isSwiped = false
+                                } else {
+                                    offset = isSwiped ? maxOffset : 0
+                                }
+                            }
+                        }
+                )
+        }
+    }
+}
+
+struct CongratsPopupView: View {
+    var points: Int
+    var onDismiss: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            // Medal Graphic
+            ZStack {
+                Image(systemName: "seal.fill")
+                    .font(.system(size: 100))
+                    .foregroundColor(Color.orangeAccent)
+                Image(systemName: "star.fill")
+                    .font(.system(size: 50))
+                    .foregroundColor(.white)
+            }
+            .padding(.top, 40)
+            
+            // Text
+            VStack(spacing: 8) {
+                Text("GREAT JOB !!!")
+                    .font(.system(size: 32, weight: .heavy))
+                    .foregroundColor(Color(hex: "5B21B6")) // Deep purple
+                
+                Text("You've Earned\n\(points)pts In Total")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "6D28D9"))
+                    .multilineTextAlignment(.center)
+            }
+            
+            // Button
+            Button(action: onDismiss) {
+                Text("Finished")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.primaryBlue)
+                    .cornerRadius(100)
+            }
+            .padding(.horizontal, 40)
+            .padding(.bottom, 40)
+            .padding(.top, 20)
+        }
+        .frame(width: 320)
+        .background(
+            LinearGradient(
+                colors: [Color(hex: "C084FC"), Color(hex: "E9D5FF"), .white],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .cornerRadius(24)
+        .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
     }
 }
